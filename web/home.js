@@ -299,6 +299,7 @@
   function sheetOpen() { return st.zone === Z.APPS || st.zone === Z.SETTINGS || st.zone === Z.EDIT || st.zone === Z.LANG; }
 
   function updateFocus() {
+    setClass(body, "dashboard-home", st.zone !== Z.CARDS && st.zone !== Z.TOP && st.zone !== Z.DRAWER);
     var i, list;
     list = $('tabs').children;
     for (i = 0; i < list.length; i++) {
@@ -312,6 +313,7 @@
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.CARDS && st.card === i);
     list = $('tiles').children;
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.SHELF && st.shelf === i);
+    setClass($("shelf-all"), "focus", st.zone === Z.SHELF && st.shelf === shelf.length);
     revealShelf();
     list = document.querySelectorAll('#drawer .key');
     for (i = 0; i < list.length; i++) setClass(list[i], 'focus', st.zone === Z.DRAWER && st.drawer === i);
@@ -417,6 +419,7 @@
 
   /** The first pick's photo as the background: drawn tiny and stretched, it's already as soft as a heavy blur. */
   function backdrop(url) {
+    if (Prefs.background() !== 'auto') { bgUrl = null; setClass($('bgA'), 'on', false); setClass($('bgB'), 'on', false); return; }
     if (url === bgUrl) return;
     bgUrl = url;
     var next = bgFront === 'bgA' ? 'bgB' : 'bgA';
@@ -439,6 +442,8 @@
 
   function renderClock() {
     var d = new Date(), c = $('clock');
+    $('hub-time').textContent = formatDate('format|h:mm', d.getTime());
+    $('hub-resolution').textContent = window.screen.width + ' \u00d7 ' + window.screen.height;
     c.firstChild.textContent = formatDate('format|h:mm', d.getTime());
     c.lastChild.textContent = formatDate('format|EEEE, MMMM d', d.getTime());
   }
@@ -454,17 +459,26 @@
   var shelfFirst = 0, tileStep = 0, tileLeft = 0;
 
   function renderShelf() {
-    var n = Math.min(shelf.length, SHELF_VISIBLE), gap = 48, pad = 40;
+    var n = Math.min(shelf.length, SHELF_VISIBLE), gap = 34, pad = 24;
     // 16:9 tiles, as on Android: never taller than 126, and the glass keeps its bottom edge.
-    var tw = Math.min(126 * 16 / 9, (1760 - Math.max(0, n - 1) * gap) / Math.max(1, n)), th = tw * 9 / 16;
-    var width = n * tw + Math.max(0, n - 1) * gap, left = (1920 - width) / 2;
+    var tw = Math.min(168, (1760 - 2 * pad - n * gap) / (n + 1)), th = Math.min(120, tw * 0.74);
+    var width = 1760 - 2 * pad, left = 80 + pad;
     var platter = $('platter');
-    platter.style.display = n ? '' : 'none';
+    platter.style.display = '';
     platter.style.left = (left - pad) + 'px';
     platter.style.width = (width + 2 * pad) + 'px';
-    platter.style.top = (814 + 126 - th) + 'px';
+    platter.style.top = (952 - th) + 'px';
     platter.style.height = (th + 2 * pad) + 'px';
     $('quotes').style.right = (1920 - left - width) + 'px';
+    var all = $('shelf-all');
+    all.innerHTML = '';
+    sym('apps', all, 54);
+    el('span', 'all-caption', all, tr('All Apps'));
+    all.style.left = (1840 - pad - tw) + 'px';
+    all.style.top = (976 - th) + 'px';
+    all.style.width = tw + 'px';
+    all.style.height = th + 'px';
+    hover(all, Z.SHELF, shelf.length);
     var tiles = $('tiles');
     tiles.innerHTML = '';
     tileStep = tw + gap;
@@ -472,7 +486,7 @@
     shelfFirst = Math.max(0, Math.min(shelfFirst, shelf.length - n));
     for (var i = 0; i < shelf.length; i++) {
       var t = el('div', 'tile', tiles);
-      t.style.top = (854 + 126 - th) + 'px';
+      t.style.top = (976 - th) + 'px';
       t.style.width = tw + 'px';
       t.style.height = th + 'px';
       face(shelf[i], t, wordFit(shelf[i].title, tw, 30));
@@ -487,7 +501,7 @@
       arrow.style.left = (a ? width + 2 * pad - 14 : 14) - 8.5 + 'px';
       arrow.style.top = (pad + th / 2 - 8.5) + 'px';
     }
-    st.shelf = Math.min(st.shelf, Math.max(0, shelf.length - 1));
+    st.shelf = Math.min(st.shelf, shelf.length);
     placeTiles();
   }
 
@@ -500,7 +514,8 @@
       tiles[i].style.opacity = shown ? '' : '0';
       tiles[i].style.pointerEvents = shown ? '' : 'none';
     }
-    row.style.webkitTransform = row.style.transform = 'translateX(' + (-shelfFirst * tileStep) + 'px)';
+    row.style.webkitTransform = row.style.transform = '';
+    for (var k = 0; k < shelf.length; k++) tiles[k].style.left = (tileLeft + (k - shelfFirst) * tileStep) + 'px';
     var arrows = $('platter').children;
     arrows[0].style.visibility = shelfFirst > 0 ? '' : 'hidden';
     arrows[1].style.visibility = shelfFirst + n < shelf.length ? '' : 'hidden';
@@ -508,6 +523,7 @@
 
   /** Scrolls the shelf, one app at a time, so the focused app is shown. */
   function revealShelf() {
+    if (st.shelf === shelf.length) return;
     var n = Math.min(shelf.length, SHELF_VISIBLE);
     var first = Math.max(0, Math.min(Math.max(shelfFirst, st.shelf - n + 1), Math.min(st.shelf, shelf.length - n)));
     if (first === shelfFirst || !shelf.length) return;
@@ -552,7 +568,49 @@
     updateFocus();
   }
 
+  function renderDashboard() {
+    var host = $('dashboard');
+    host.innerHTML = '';
+    var weather = el('div', 'hub-weather hub-panel', host);
+    if (Prefs.weather()) {
+      el('div', 'hub-heading', weather, Data.city || tr('Weather'));
+      el('div', 'hub-subtitle', weather, tr('Local weather'));
+      var w = Data.weather;
+      if (w) {
+        sym(Data.symbol(w.code, w.isDay), el('div', 'hub-weather-icon', weather), 130);
+        el('div', 'hub-temp', weather, Data.degrees(w.temp));
+        el('div', 'hub-condition', weather, Data.condition(w.code, w.isDay));
+        if (typeof w.feels === 'number') el('div', 'hub-feels', weather, tr('Feels like') + ' ' + Data.degrees(w.feels));
+        el('div', 'hub-range', weather, tr('Max') + ' ' + Data.degrees(w.max) + '     ' + tr('Min') + ' ' + Data.degrees(w.min));
+        var details = el('div', 'hub-details', weather);
+        el('div', 'hub-mini', details, tr('Humidity') + ': ' + (typeof w.humidity === 'number' ? w.humidity + '%' : '\u2014'));
+        el('div', 'hub-mini', details, tr('Wind') + ': ' + (typeof w.wind === 'number' ? w.wind + ' km/h' : '\u2014'));
+        var hours = el('div', 'hub-hours', weather);
+        for (var i = 0; i < 4; i++) {
+          var h = i === 0 ? {at: Date.now(), temp: w.temp, code: w.code, day: w.isDay} : w.hours[i - 1];
+          var box = el('div', 'hub-hour', hours);
+          el('div', '', box, i === 0 ? tr('Now') : h ? formatDate('format|h:mm a', h.at) : '\u2014');
+          el('strong', '', box, h ? Data.degrees(h.temp) : '\u2014');
+          el('small', '', box, h ? Data.condition(h.code, h.day) : '\u2014');
+        }
+      } else el('div', 'hub-condition', weather, tr('No weather data right now.'));
+    } else weather.style.display = 'none';
+    var system = el('div', 'hub-system hub-panel', host);
+    if (!Prefs.weather()) { system.style.left = '80px'; system.style.width = '1760px'; }
+    el('div', 'hub-heading', system, tr('System Monitor'));
+    el('div', 'hub-subtitle', system, tr('Unavailable'));
+    var metrics = el('div', 'hub-metrics', system);
+    var cpu = el('div', 'hub-metric', metrics, tr('CPU USAGE'));
+    el('strong', '', cpu, '\u2014');
+    var fps = el('div', 'hub-metric', metrics, tr('FRAME RATE'));
+    el('strong', '', fps, '\u2014');
+    var ram = el('div', 'hub-memory', system, tr('RAM Memory'));
+    el('div', 'hub-track', ram);
+    el('small', '', ram, tr('Unavailable'));
+  }
+
   function renderPanels() {
+    renderDashboard();
     var d = $('drawer');
     var old = d.querySelectorAll('.panel');
     for (var o = 0; o < old.length; o++) d.removeChild(old[o]);
@@ -621,7 +679,7 @@
     if (!drawerItems.length) return;
     var tiles = $('tiles').children;
     st.zone = Z.DRAWER;
-    st.drawer = Math.min(drawerItems.length - 1, nearest(document.querySelectorAll('#drawer .key'), centerX(tiles[st.shelf])));
+    st.drawer = Math.min(drawerItems.length - 1, nearest(document.querySelectorAll('#drawer .key'), centerX(st.shelf === shelf.length ? $('shelf-all') : tiles[st.shelf])));
     updateFocus();
   }
 
@@ -692,6 +750,14 @@
           step: function () { if (Prefs.quotes()) { Prefs.setCoin(i, !Prefs.coin(i)); Data.settingsChanged(); } }});
       })(i);
     }
+    rows.push({label: tr('Background'), value: Wallpapers.name(Prefs.background()),
+      step: function (d) { cycle('background', Wallpapers.choices, Prefs.background(), d); renderCards(); checkNight(); }});
+    rows.push({label: tr('Background effect'), dim: Prefs.background() === 'auto', value: Prefs.backgroundBlur() ? tr('Blurred background') : tr('Only background'),
+      step: function () { if (Prefs.background() === 'auto') return; Prefs.set('backgroundBlur', !Prefs.backgroundBlur()); checkNight(); }});
+    rows.push({label: tr('Blur strength'), value: Prefs.backgroundStrength() + '%', dim: !Prefs.backgroundBlur() || Prefs.background() === 'auto',
+      step: function (d) { if (Prefs.backgroundBlur() && Prefs.background() !== 'auto') { Prefs.set('backgroundStrength', Math.max(0, Math.min(100, Prefs.backgroundStrength() + (d || 1) * 5))); checkNight(); } }});
+    rows.push({label: tr('Background brightness'), dim: Prefs.background() === 'auto', value: Prefs.backgroundBrightness() + '%',
+      step: function (d) { if (Prefs.background() === 'auto') return; Prefs.set('backgroundBrightness', Math.max(0, Math.min(100, Prefs.backgroundBrightness() + (d || 1) * 5))); checkNight(); }});
     rows.push({label: tr('Shelf'), value: '›', step: function (d) { if (d >= 0) openShelfEdit(); }});
     rows.push({label: tr('TV Settings'), value: '›', step: function (d) { if (d >= 0) tvSettings(); }});
     return rows;
@@ -882,6 +948,7 @@
         if (app) launcher(app.id, app.title)();
         return;
       case Z.SHELF:
+        if (st.shelf === shelf.length) { openApps(); return; }
         if (shelf[st.shelf]) launcher(shelf[st.shelf].id, shelf[st.shelf].title)();
         return;
       case Z.DRAWER:
@@ -912,7 +979,7 @@
     var tiles = $('tiles').children, cardNodes = $('cards').children;
     switch (st.zone) {
       case Z.SHELF:
-        if (dx) st.shelf = Math.max(0, Math.min(shelf.length - 1, st.shelf + dx));
+        if (dx) st.shelf = Math.max(0, Math.min(shelf.length, st.shelf + dx));
         else if (dy > 0) { openDrawer(); return; }
         else if (dy < 0) {
           if (cards.length) { st.zone = Z.CARDS; st.card = nearest(cardNodes, centerX(tiles[st.shelf])); }
@@ -1006,6 +1073,9 @@
 
   function checkNight() {
     var night = Data.isNight(Date.now());
+    setClass(body, "custom-background", Prefs.background() !== "auto");
+    Wallpapers.render(night);
+    Wallpapers.surfaces(night);
     setClass(body, 'night', night);
     if (night === lastNight) return;
     lastNight = night;
