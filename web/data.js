@@ -46,6 +46,10 @@ var Prefs = (function () {
     language: function () { return pick('language', CONFIG.language || 'auto'); },
     temperature: function () { return pick('temperature', CONFIG.temperature || 'auto'); },
     theme: function () { return pick('theme', 'auto'); },
+    background: function () { return pick('background', 'ocean'); },
+    backgroundBlur: function () { return pick('backgroundBlur', true); },
+    backgroundStrength: function () { return Math.max(0, Math.min(100, pick('backgroundStrength', 35))); },
+    backgroundBrightness: function () { return Math.max(0, Math.min(100, pick('backgroundBrightness', 50))); },
     weather: function () { return pick('weather', true); },
     quotes: function () { return pick('quotes', CONFIG.showCrypto !== false); },
     coin: function (i) { var c = pick('coins', null); return c ? c[i] !== false : true; },
@@ -109,6 +113,7 @@ var Data = (function () {
     if (!o || !o.current) return null;
     var off = o.utc_offset_seconds || 0, now = Date.now();
     var w = {
+      humidity: o.current.relative_humidity_2m, feels: o.current.apparent_temperature, wind: o.current.wind_speed_10m,
       temp: o.current.temperature_2m, code: o.current.weather_code, isDay: o.current.is_day !== 0,
       max: o.daily.temperature_2m_max[0], min: o.daily.temperature_2m_min[0],
       sunrise: localTime(o.daily.sunrise[0], off), sunset: localTime(o.daily.sunset[0], off), hours: []
@@ -127,7 +132,7 @@ var Data = (function () {
     if (fetchingWeather || (now - weatherAt < 30 * 60000 && now >= weatherAt)) return;
     fetchingWeather = true;
     var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + Place.lat + '&longitude=' + Place.lon
-        + '&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset'
+        + '&current=temperature_2m,weather_code,is_day,relative_humidity_2m,apparent_temperature,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset'
         + '&hourly=temperature_2m,weather_code,is_day&timezone=auto&forecast_days=2';
     get(url, {}, function (err, body) {
       fetchingWeather = false;

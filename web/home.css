@@ -11,6 +11,41 @@
   font-weight: 100 900;
 }
 
+/* Compact dashboard, matching the native home screen. Web TV APIs do not expose CPU/RAM. */
+#dashboard { display: none; position: absolute; top: 194px; left: 0; width: 1920px; height: 620px; }
+.dashboard-home #dashboard { display: block; }
+.dashboard-home #tabs, .dashboard-home #cards, .dashboard-home #clock, .dashboard-home #quotes { display: none; }
+.hub-panel { position: absolute; top: 0; height: 620px; border-radius: 38px; background: rgba(255,255,255,0.94); box-shadow: 0 12px 36px rgba(0,0,0,0.07); }
+.hub-weather { left: 80px; width: 1006px; }
+.hub-system { left: 1126px; width: 714px; }
+.hub-heading { position: absolute; top: 58px; left: 56px; font-size: 34px; font-weight: 700; }
+.hub-subtitle { position: absolute; top: 108px; left: 56px; font-size: 21px; color: #6E6E73; }
+.hub-weather-icon { position: absolute; left: 56px; top: 200px; }
+.hub-temp { position: absolute; left: 236px; top: 174px; font-size: 108px; font-weight: 700; }
+.hub-condition { position: absolute; left: 236px; top: 296px; font-size: 30px; font-weight: 600; }
+.hub-feels { position: absolute; left: 236px; top: 337px; font-size: 19px; color: #6E6E73; }
+.hub-range { position: absolute; right: 56px; top: 182px; font-size: 22px; }
+.hub-details { position: absolute; right: 56px; top: 258px; width: 320px; }
+.hub-mini { padding: 16px; margin-bottom: 12px; background: #F8F8FA; border: 2px solid #EAEAEE; border-radius: 20px; font-size: 21px; }
+.hub-hours { position: absolute; left: 56px; right: 56px; top: 418px; border-top: 2px solid #EAEAEE; padding-top: 18px; white-space: nowrap; }
+.hub-hour { display: inline-block; width: 23%; margin-right: 2%; height: 128px; text-align: center; background: #F8F8FA; border: 2px solid #EAEAEE; border-radius: 24px; font-size: 19px; padding-top: 16px; vertical-align: top; box-sizing: border-box; }
+.hub-hour strong, .hub-hour small { display: block; margin-top: 12px; }
+.hub-hour strong { font-size: 26px; }
+.hub-hour small { font-size: 17px; overflow: hidden; }
+.hub-metrics { position: absolute; left: 56px; right: 56px; top: 166px; }
+.hub-metric { display: inline-block; width: 44%; height: 194px; margin-right: 4%; padding: 24px; box-sizing: border-box; border: 2px solid #EAEAEE; border-radius: 24px; background: #F8F8FA; font-size: 18px; color: #6E6E73; }
+.hub-metric strong { display: block; font-size: 54px; margin-top: 40px; color: #1D1D1F; }
+.hub-memory { position: absolute; left: 56px; right: 56px; top: 384px; height: 180px; padding: 24px; box-sizing: border-box; border: 2px solid #EAEAEE; border-radius: 24px; background: #F8F8FA; font-size: 21px; font-weight: 600; }
+.hub-track { height: 17px; border-radius: 9px; background: #E1E1E6; margin: 28px 0; }
+.hub-memory small { font-size: 18px; color: #6E6E73; }
+#hub-label, #hub-status { position: absolute; top: 54px; border-radius: 26px; background: rgba(255,255,255,0.94); }
+#hub-label { left: 580px; top: 88px; padding: 10px 20px; font-size: 18px; font-weight: 700; }
+#hub-status { left: 1000px; width: 840px; height: 98px; }
+#hub-resolution { position: absolute; left: 40px; top: 35px; font-size: 21px; }
+#hub-time { position: absolute; right: 32px; top: 28px; font-size: 31px; font-weight: 700; }
+.night .hub-panel, .night #hub-status, .night #hub-label { background: #1C1C1E; color: #F5F5F7; }
+.night .hub-mini, .night .hub-hour, .night .hub-metric, .night .hub-memory { background: #232327; border-color: #38383D; color: #F5F5F7; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -543,3 +578,39 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 /* The Magic Remote's pointer: no text selection, no outlines. */
 * { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+
+#top { z-index: 1; }
+#hub-status, #hub-label { pointer-events: none; }
+#buttons { -webkit-transform: translateX(-170px); transform: translateX(-170px); }
+#platter { border-radius: 46px; background: rgba(255,255,255,0.94); }
+
+.dashboard-home.no-picks #clock { display: none; }
+
+
+/* A consistent neutral outline marks focus in every navigation row. */
+.tile.focus, .round.focus, .tab.focus, .key.focus, .card.focus, .row.focus, .cell.focus .face {
+  outline: 3px solid #6E6E73;
+  outline-offset: 2px;
+  -webkit-transform: none;
+  transform: none;
+}
+.tile.focus { box-shadow: 0 4px 22px rgba(0,0,0,0.14); }
+.key.focus, .round.focus, .tab.focus { box-shadow: none; }
+.night .focus { outline-color: #C7C7CC; }
+#shelf-all { box-sizing: border-box; background: #F4F4F6; color: #6E6E73; border: 2px solid #E7E7EB; }
+#shelf-all .sym { position: absolute; left: 50%; top: 16px; margin-left: -27px; }
+#shelf-all .all-caption { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 17px; }
+.night #shelf-all { background: #29292D; border-color: #3A3A40; color: #F5F5F7; }
+
+#top { pointer-events: none; }
+#top button, #top .card { pointer-events: auto; }
+
+#sky #wallpaper { left: 0; top: 0; width: 100%; height: 100%; opacity: 1; }
+.custom-background #sky .veil { display: none; }
+.night .tab.focus, .night .key.focus, .night .round.focus, .night .row.focus {
+  color: #F5F5F7;
+  background-color: #303036;
+}
+.night .tab.on { color: #F5F5F7; }
+.night .row.focus .value, .night .row.focus .value .sym { color: #DADAE0; }
+.night .tile .word, .night .cell.focus .label { color: #F5F5F7; }
