@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  * On the home shelf, each app is its colored logo on a dark card: the official logo in assets/logos/<key>.png
  * (downloaded from Wikimedia Commons by tools/logos.py) or, without one, the logo lifted from the app's TV art (the
  * Android TV "banner"), saved to disk after the first time. In "All Apps", 16:9 cards with the whole TV art (or the
- * icon on a dark card). Shortcuts (live TV, inputs, All Apps, settings) are icon buttons.
+ * icon on a dark card). Shortcuts (live TV, inputs and settings) are icon buttons.
  */
 final class HomeApps {
     private HomeApps() {}
@@ -71,6 +71,7 @@ final class HomeApps {
         BitmapShader tileShader;   // the card's, for its rounded corners (made with the card, never while drawing)
         Bitmap logo;        // colored logo with no background (shelf); null = use the card
         Bitmap logoDark;    // version for a light background (YouTube's white icon), if any
+        Bitmap dockIcon;    // transparent app icon for the compact shelf
         float logoInk;      // fraction of the logo with ink (thin logos are drawn larger, with the same "weight")
         float logoScale = 1; // size tweak by eye (compact logos need more)
         boolean connected = true;
@@ -91,6 +92,8 @@ final class HomeApps {
         {"netflix", "Netflix", "com.netflix.ninja", "E50914", "", "1"},
         {"youtube", "YouTube", "com.google.android.youtube.tv", "FF0033", "play", "1"},
         {"youtube", "YouTube", "com.amazon.firetv.youtube", "FF0033", "play", "1"},
+        {"chrome", "Chrome", "com.android.chrome", "4285F4", "", "1"},
+        {"playstore", "Play Store", "com.android.vending", "34A853", "", "1"},
         {"prime", "Prime Video", "com.amazon.amazonvideo.livingroom", "1A98FF", "tint", "0.96"},
         {"prime", "Prime Video", "com.amazon.firebat", "1A98FF", "tint", "0.96"},
         {"prime", "Prime Video", "com.amazon.avod", "1A98FF", "tint", "0.96"},
@@ -168,6 +171,13 @@ final class HomeApps {
             Item it = new Item();
             it.kind = APP;
             it.pkg = pkg;
+            try {
+                Drawable icon = pm.getApplicationIcon(pkg);
+                it.dockIcon = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888);
+                Canvas iconCanvas = new Canvas(it.dockIcon);
+                icon.setBounds(0, 0, 96, 96);
+                icon.draw(iconCanvas);
+            } catch (PackageManager.NameNotFoundException | RuntimeException ignored) { }
             if (d == null) {
                 // An app picked in Settings > Shelf that isn't in SHELF: its own name and TV art.
                 it.key = pkg;
@@ -261,14 +271,13 @@ final class HomeApps {
         return out;
     }
 
-    /** Live TV, the HDMI inputs with a device sending a signal, and All Apps. */
+    /** Live TV and HDMI inputs with a device sending a signal. */
     static List<Item> shortcuts(Context c) {
         List<Item> items = new ArrayList<>();
         if (liveTv(c) != null) {
             items.add(shortcut(LIVE_TV, "live", Ui.tr("Live TV"), "tv"));
         }
         items.addAll(inputs(c));
-        items.add(shortcut(ALL_APPS, "all", Ui.tr("All Apps"), "apps"));
         return items;
     }
 
@@ -291,10 +300,9 @@ final class HomeApps {
         return shortcut(SETTINGS, "settings", Ui.tr("Settings"), "settings");
     }
 
-    /** Shortcuts in the bottom drawer. */
-    static List<Item> drawerShortcuts(Context c) {
+    /** Home-screen options shown below the app shelf while browsing. */
+    static List<Item> homeShortcuts(Context c) {
         List<Item> items = new ArrayList<>();
-        items.add(shortcut(ALL_APPS, "all", Ui.tr("All Apps"), "apps"));
         items.add(shortcut(SETTINGS, "settings", Ui.tr("Home Settings"), "settings"));
         items.add(shortcut(ANDROID_SETTINGS, "tv-settings", Ui.tr("TV Settings"), "tv_settings"));
         // HY300 projectors (Hotack, Allwinner H713): keystone and focus live in the maker's settings app, and the

@@ -64,6 +64,8 @@ final class Recs {
     private static final int MANHA = 0, TARDE = 1, NOITE = 2;
     /** Service name on TMDB (part of the name, lowercase) → TV app (HomeApps key, package). */
     private static final String[][] SERVICES = {
+        {"youtube", "youtube", "com.google.android.youtube.tv"},
+        {"youtube", "youtube", "com.amazon.firetv.youtube"},
         {"netflix", "netflix", "com.netflix.ninja"},
         {"prime video", "prime", "com.amazon.amazonvideo.livingroom"},
         {"prime video", "prime", "com.amazon.firebat"},
@@ -87,6 +89,7 @@ final class Recs {
     };
     private static final Map<String, String> SERVICE_NAME = new HashMap<>();
     static {
+        SERVICE_NAME.put("youtube", "YouTube");
         SERVICE_NAME.put("netflix", "Netflix");
         SERVICE_NAME.put("prime", "Prime Video");
         SERVICE_NAME.put("disney", "Disney+");

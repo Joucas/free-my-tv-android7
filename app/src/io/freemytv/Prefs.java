@@ -119,6 +119,19 @@ final class Prefs {
 
     static void setTheme(String v) { put("theme", v); }
 
+    static String background() {
+        String v = sp().getString("background", "ocean");
+        for (String id : Wallpaper.CHOICES) if (id.equals(v)) return v;
+        return "ocean";
+    }
+    static void setBackground(String v) { put("background", v); }
+    static boolean backgroundBlur() { return sp().getBoolean("backgroundBlur", true); }
+    static void setBackgroundBlur(boolean on) { put("backgroundBlur", on); }
+    static int backgroundStrength() { return Math.max(0, Math.min(100, sp().getInt("backgroundStrength", 35))); }
+    static int backgroundBrightness() { return Math.max(0, Math.min(100, sp().getInt("backgroundBrightness", 50))); }
+    static void setBackgroundStrength(int v) { sp().edit().putInt("backgroundStrength", Math.max(0, Math.min(100, v))).apply(); version++; }
+    static void setBackgroundBrightness(int v) { sp().edit().putInt("backgroundBrightness", Math.max(0, Math.min(100, v))).apply(); version++; }
+
     // MARK: - City
 
     static String city() { return sp().getString("city", Config.CITY).trim(); }
@@ -134,20 +147,14 @@ final class Prefs {
     static boolean sounds() { return sp().getBoolean("sounds", true); }
     static void setSounds(boolean on) { put("sounds", on); }
 
-    // MARK: - Widgets and coins
+    // MARK: - Widgets
 
     static boolean weather() { return sp().getBoolean("weather", true); }
     static void setWeather(boolean on) { put("weather", on); }
 
-    static boolean quotes() { return sp().getBoolean("quotes", Config.SHOW_CRYPTO); }
-    static void setQuotes(boolean on) { put("quotes", on); }
-
     /** Your photos (Photos, sent from a computer) on the screensaver and behind the home screen, once imported. */
     static boolean photos() { return sp().getBoolean("photos", true); }
     static void setPhotos(boolean on) { put("photos", on); }
-
-    static boolean coin(int i) { return sp().getBoolean("coin" + i, true); }
-    static void setCoin(int i, boolean on) { put("coin" + i, on); }
 
     // MARK: - Shelf
 

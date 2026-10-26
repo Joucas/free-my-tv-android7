@@ -21,6 +21,8 @@
          (for "All Apps"). -->
     <queries>
         <package android:name="com.netflix.ninja" />
+        <package android:name="com.android.chrome" />
+        <package android:name="com.android.vending" />
         <package android:name="com.google.android.youtube.tv" />
         <package android:name="com.amazon.firetv.youtube" />
         <package android:name="com.amazon.amazonvideo.livingroom" />
