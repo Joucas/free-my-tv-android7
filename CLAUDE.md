@@ -178,8 +178,12 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
 
 ## The code
 
-- Java 8 language level, minSdk 26 (Android 8), targetSdk 33. No Gradle, no libraries: only the Android SDK.
-  Android 9 and older have no RenderNode (`Recording` wraps it, with a Picture there) and no `cmd role`. On Android 8 to 11
+- Java 8 language level, minSdk 24 (Android 7), targetSdk 33. Android 7 support is experimental and device/firmware
+  dependent; do not imply that lowering minSdk guarantees the home switch or every feature works on a TV.
+  No Gradle, no libraries: only the Android SDK.
+  API 26 font variation, foreground-service start/notification channels and overlay window type must remain guarded
+  with Android 7 fallbacks (`Typeface.DEFAULT`, `startService`/legacy notification, `TYPE_SYSTEM_ALERT`).
+  Android 9 and older have no RenderNode (`Recording` wraps it, with a Picture there) and no `cmd role`. On Android 7 to 11
   (`Ui.LEGACY`) the home screen skips the GPU layers, draws blurred shadows from cached bitmaps (`Shadows`) and
   rounds images with a shader instead of clipPath: their GPUs (a Mi Box 3's Mali-450) choked on those.
   Android 11 runs the screensaver as `ScreensaverAlone`, in the main process (its DreamActivity needs the dream in the
@@ -187,10 +191,13 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   `Screensaver` in `:home`. Keep both in step. `ScreensaverAlone` reads `Prefs` from another process than the
   settings screen's, so it calls `Prefs.reload()` when it starts (which also re-applies a new language; `HomeData`
   fetches the forecast again when the city changed).
-  To check for newer APIs, compile against `platforms/android-26/android.jar`: only AGSL (`RuntimeShader`, guarded
-  by a try/catch), `BitmapShader.setFilterMode` (guarded), `Recording.Node` and `Ui.Weighted` (the Android 9 font weight) should come up.
+  API 26's `AdaptiveIconDrawable` is isolated in `HomeApps.Api26`; don't reference it from `HomeApps` itself, which runs
+  on Android 7. To check for newer APIs, compile against `platforms/android-26/android.jar`: only AGSL (`RuntimeShader`,
+  guarded by a try/catch), `BitmapShader.setFilterMode` (guarded), `Recording.Node` and `Ui.Weighted` (the Android 9 font weight) should come up.
+  Open-Meteo requests add the official ISRG Root X1 only after system certificate validation fails, for older TV firmware
+  missing that root; keep hostname verification enabled and limit the extra trust to Open-Meteo hosts.
 - The home screen is drawn by hand on one Canvas (`HomeView`); the glass and the sky are AGSL shaders (`Shaders`,
-  Android 13+, with a fallback for 8 to 12). Keep it at 60 fps: no allocations in `onDraw`, no work on the UI thread.
+  Android 13+, with a fallback for 7 to 12). Keep it at 60 fps: no allocations in `onDraw`, no work on the UI thread.
 - Some TVs draw their UI at 1280×720 on a 1080p panel (TCL's 1 GB models: `ro.surface_flinger.max_graphics_width`
   and `_height`, `ro.config.low_ram`). There every pixel and every MB counts: `Backdrop` builds its images at the UI's
   size (and the picks use TMDB's w1280), and the shelf logos have a copy at the resting size and one at the focused
@@ -215,6 +222,8 @@ entries; its system pieces are in `PROTECTED`. USB debugging opens ADB on 5555 t
   What the person changes on the TV (`Prefs`: Home Settings, Shelf, Remote Buttons, Sleep Timer) wins over those first values.
 - Settings rows that need something this TV lacks stay, dimmed as *Unavailable*: `SettingsActivity.need` names what a
   row needs, `Capabilities.missing` says why it's missing (once per screen), and OK on the row shows it in a toast.
+- `Recs.SERVICES` maps TMDB watch providers to installed TV apps; when adding a service, update `SERVICE_NAME` too
+  and keep matching restricted to its actual installed package(s). The YouTube provider uses the YouTube TV package.
 - The remote's app buttons (`RemoteKeys`, `RemoteKeyService`) use each brand's key codes: they run only on TCL,
   Vestel, KTC (NextStar), Sony and Xiaomi TVs and Formovie projectors, the service is on only in Free My TV mode, and *Original* takes it out of the enabled accessibility
   services. The system waits for the service on every key, so it lives alone in the `:keys` process: what it reads is
