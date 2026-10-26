@@ -17,7 +17,7 @@ import android.graphics.Shader;
  * background, its blurred version (setFrost).
  * If AGSL fails (it shouldn't on Android 13+), it falls back to a gradient and plain translucent glass: the home screen
  * is never left blank.
- * Without AGSL (Android 8 to 12) the glass over a photo is still glass: the photo's blurred copy (the same `int[]` the
+ * Without AGSL (Android 7 to 12) the glass over a photo is still glass: the photo's blurred copy (the same `int[]` the
  * shaders would read, box-averaged into a small bitmap that bilinear filtering spreads into a blur) is drawn through
  * the rounded shape, mapped to the screen so it shows what is really behind it, then the tint, the rim and a sheen
  * along the top. The small bitmaps and their pixel buffers are made once and reused; nothing is allocated per frame.
@@ -68,7 +68,7 @@ final class Scene {
             auroraPaint.setShader(aurora);
             glassPaint.setShader(glass);
             liquidPaint.setShader(liquid);
-        } catch (RuntimeException | LinkageError e) {   // Android 8 to 12: no AGSL, flat look instead
+        } catch (RuntimeException | LinkageError e) {   // Android 7 to 12: no AGSL, flat look instead
             AppLog.w("shader unavailable, using gradient: " + e.getMessage());
             aurora = null;
             glass = null;
@@ -92,7 +92,7 @@ final class Scene {
         auroraNode.setPosition(0, 0, lw, lh);
         if (glass == null) {
             // The sheen fades over a fixed height from each glass's top edge, drawn with a translate: a local matrix
-            // per glass would rebuild the native gradient on every draw on Android 8 to 12.
+            // per glass would rebuild the native gradient on every draw on Android 7 to 12.
             sheenPaint.setShader(new android.graphics.LinearGradient(0, 0, 0, Math.max(1, h * 0.1f),
                     new int[] {0x66FFFFFF, 0x1AFFFFFF, 0x05FFFFFF}, new float[] {0, 0.45f, 1}, Shader.TileMode.CLAMP));
         }
@@ -154,7 +154,7 @@ final class Scene {
     void setGlassImages(int[] from, int[] to) {
         imageGlass = true;
         glassMix = 0;
-        if (liquid == null) {           // no AGSL (Android 8 to 12): the bitmaps path reads small soft copies instead
+        if (liquid == null) {           // no AGSL (Android 7 to 12): the bitmaps path reads small soft copies instead
             if (softPxA == null) softPxA = new int[SW * SH];
             if (softA == null) softA = Bitmap.createBitmap(SW, SH, Bitmap.Config.ARGB_8888);
             softShaderA = soften(from, Backdrop.GW, SOFT, SW, SH, softPxA, softA);

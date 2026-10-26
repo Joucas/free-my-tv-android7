@@ -351,8 +351,9 @@ final class HomeMode {
             }
             busy(c, Ui.tr("Switching the home screen and screensaver…"));
             Watchdog.clear(c);
-            check(adb.shell("cmd package set-home-activity " + HOME_ACTIVITY), "Success",
-                    Ui.tr("Android didn't accept the new home screen"));
+            if (!setHome(adb, HOME_ACTIVITY)) {
+                throw new IOException(Ui.tr("Android didn't accept the new home screen"));
+            }
             adb.shell("settings put secure screensaver_components " + DREAM);
             boolean jmOurs = !jm || setJmHome(adb, PKG);
             if (!jmOurs) AppLog.w("JmLauncher keeps the Home button: " + JM_HOME + " didn't take");
@@ -503,12 +504,12 @@ final class HomeMode {
         if (home.isEmpty() && adb.shell("pm path " + packageOf(GOOGLE_HOME)).contains("package:")) home = GOOGLE_HOME;
         if (!home.isEmpty()) {
             adb.shell("pm enable " + packageOf(home));
-            if (adb.shell("cmd package set-home-activity '" + home + "'").contains("Success")) return true;
+            if (setHome(adb, home)) return true;
         }
         String stock = stockHome(adb);
         if (stock != null && !stock.equals(home)) {
             adb.shell("pm enable " + packageOf(stock));
-            if (adb.shell("cmd package set-home-activity '" + stock + "'").contains("Success")) return true;
+            if (setHome(adb, stock)) return true;
         }
         adb.shell("cmd role remove-role-holder --user 0 android.app.role.HOME " + PKG);
         return !homeHolder(adb).contains(PKG);
@@ -858,8 +859,12 @@ final class HomeMode {
         return adb;
     }
 
-    private static void check(String output, String expected, String error) throws IOException {
-        if (!output.contains(expected)) throw new IOException(error + " (" + output.trim() + ")");
+    private static boolean setHome(Adb adb, String component) throws IOException {
+        String output = adb.shell("cmd package set-home-activity '" + component + "'").trim();
+        if (output.contains("Success")) return true;
+        String[] lines = adb.shell("cmd package resolve-activity --brief --user 0 -a android.intent.action.MAIN"
+                + " -c android.intent.category.HOME").trim().split("\n");
+        return lines.length > 0 && component.equals(lines[lines.length - 1].trim());
     }
 
     // MARK: - Measurements (without opening apps: memory and the home button)

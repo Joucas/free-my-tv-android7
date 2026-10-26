@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 final class Ui {
     private Ui() {}
 
-    /** Android 8 to 11: older TVs and boxes, whose GPUs need the cheaper drawing paths (Shadows, rounded images). */
+    /** Android 7 to 11: older TVs and boxes, whose GPUs need the cheaper drawing paths (Shadows, rounded images). */
     static final boolean LEGACY = Build.VERSION.SDK_INT < 31;
     /**
      * The language in use: "en" or one with a catalogue in assets/i18n (pt, es, de, fr, zh-CN…), picked in the settings
@@ -67,20 +67,26 @@ final class Ui {
 
     /** Inter at an optical size (14 = text, 32 = display) and weight; the system font if the file is missing. */
     private static Typeface font(AssetManager a, int opticalSize, int weight) {
-        if (has(a, FONT)) {
+        if (has(a, FONT) && Build.VERSION.SDK_INT >= 26) {
             try {
-                Typeface t = new Typeface.Builder(a, FONT)
-                        .setFontVariationSettings("'opsz' " + opticalSize + ", 'wght' " + weight).build();
+                Typeface t = Api26.variableFont(a, opticalSize, weight);
                 if (t != null) return t;
-            } catch (RuntimeException ignored) {
+            } catch (RuntimeException | LinkageError ignored) {
             }
         }
-        // Typeface.create(family, weight, italic) is Android 9+; Android 8 only has regular and bold.
+        // Typeface.Builder is Android 8+; Android 7 uses the system's regular and bold faces.
         if (Build.VERSION.SDK_INT >= 28) return Weighted.create(weight);
         return Typeface.create(Typeface.DEFAULT, weight >= 600 ? Typeface.BOLD : Typeface.NORMAL);
     }
 
-    /** Only this class touches the Android 9 call, so Ui itself still verifies on Android 8 (like Recording.Node). */
+    private static final class Api26 {
+        static Typeface variableFont(AssetManager assets, int opticalSize, int weight) {
+            return new Typeface.Builder(assets, FONT)
+                    .setFontVariationSettings("'opsz' " + opticalSize + ", 'wght' " + weight).build();
+        }
+    }
+
+    /** Only this class touches the Android 9 call, so Ui itself still verifies on Android 7 (like Recording.Node). */
     private static final class Weighted {
         static Typeface create(int weight) {
             return Typeface.create(Typeface.DEFAULT, weight, false);
