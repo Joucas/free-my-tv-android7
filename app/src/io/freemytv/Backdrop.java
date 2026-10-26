@@ -71,6 +71,20 @@ final class Backdrop {
         nightImage = nightBg == null ? null : Bitmap.createBitmap(nightBg, bw, bh, Bitmap.Config.ARGB_8888);
     }
 
+    /** The background's effect is independent of the surfaces' fixed frosted treatment. */
+    static Backdrop wallpaper(Bitmap src, int blur, int brightness) {
+        int[] frost = reduce(src, FW, FH, 4, 3);
+        int[] surface = reduce(src, GW, GH, 3, 3);
+        int radius = Math.round(blur * 0.24f);
+        int[] pixels = reduce(src, 640, 360, radius, radius == 0 ? 0 : 3);
+        src.recycle();
+        float bright = brightness / 100f;
+        return new Backdrop(null, frost, null, null, null,
+                whiten(frost.clone(), 0.60f), whiten(surface.clone(), 0.52f),
+                darken(frost.clone(), 0.62f), darken(surface, 0.60f),
+                whiten(pixels.clone(), bright * 0.55f), darken(pixels, 0.86f - bright * 0.44f), 640, 360);
+    }
+
     static Backdrop make(Bitmap src, boolean forLight) {
         return make(src, forLight, false);
     }
@@ -254,7 +268,7 @@ final class Backdrop {
         if (b != full) b.recycle();
         int[] px = new int[w * h];
         small.getPixels(px, 0, w, 0, 0, w, h);
-        small.recycle();
+        if (small != full) small.recycle();
         int[] tmp = new int[px.length];
         for (int pass = 0; pass < passes; pass++) {
             box(px, tmp, w, h, radius, true);

@@ -439,28 +439,28 @@ public class SettingsActivity extends Activity {
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + ROW_H * k);
                 float f = drawRowBackground(c, i);
                 boolean off = unavailable(i) != null;
-                int ink = off ? blend(0x73FFFFFF, 0x731C1C1E, f) : blend(0xF2FFFFFF, INK, f);
+                int ink = off ? blend(0x73FFFFFF, Ui.alpha(focusInk(), 0.45f), f) : blend(0xF2FFFFFF, focusInk(), f);
                 rowLabel.setColor(ink);
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(labels[i], rowRect.left + 30 * k, base, rowLabel);
                 float right = rowRect.right - 30 * k;
                 if (off) {
-                    rowValue.setColor(blend(0x59FFFFFF, 0x591C1C1E, f));
+                    rowValue.setColor(blend(0x59FFFFFF, Ui.alpha(focusInk(), 0.35f), f));
                     c.drawText(Ui.tr("Unavailable"), right, base, rowValue);
                 } else if (i >= 2) {
                     float cw = Symbols.width(getContext(), "chevron_right", 22 * k);
-                    Symbols.draw(getContext(), c, "chevron_right", right - cw / 2, rowRect.centerY(), 22 * k, blend(0x66FFFFFF, 0x991C1C1E, f));
+                    Symbols.draw(getContext(), c, "chevron_right", right - cw / 2, rowRect.centerY(), 22 * k, blend(0x66FFFFFF, Ui.alpha(focusInk(), 0.6f), f));
                 } else if (i == 0 && working) {
                     // Switching: the current step in place of the value, with the spinning arc.
                     String text = busyText.isEmpty() ? Ui.tr("Starting…") : busyText;
-                    rowValue.setColor(blend(0xB3FFFFFF, 0xB31C1C1E, f));
+                    rowValue.setColor(blend(0xB3FFFFFF, Ui.alpha(focusInk(), 0.7f), f));
                     String shown = TextUtils.ellipsize(text, new TextPaint(rowValue), 470 * k, TextUtils.TruncateAt.END).toString();
                     c.drawText(shown, right, base, rowValue);
                     float sx = right - rowValue.measureText(shown) - 26 * k;
-                    spinner.setColor(blend(0xFFFFFFFF, INK, f));
+                    spinner.setColor(blend(0xFFFFFFFF, focusInk(), f));
                     Ui.spinner(c, sx, rowRect.centerY(), 12 * k, seconds * 1.3f, spinner);
                 } else {
-                    rowValue.setColor(blend(0x8CFFFFFF, 0x8C1C1C1E, f));
+                    rowValue.setColor(blend(0x8CFFFFFF, Ui.alpha(focusInk(), 0.55f), f));
                     c.drawText(values[i], right, base, rowValue);
                 }
             }
@@ -514,6 +514,8 @@ public class SettingsActivity extends Activity {
         }
 
         /** List row: no background; focused, white with a shadow (the Apple TV focus). Returns how focused it is. */
+        private int focusInk() { return HomeData.get(getContext()).isNight(System.currentTimeMillis()) ? 0xFFF5F5F7 : INK; }
+
         private float drawRowBackground(Canvas c, int i) {
             float f = Ui.clamp(pop[i].value);
             if (f > 0.01f) {
@@ -525,6 +527,7 @@ public class SettingsActivity extends Activity {
                 shadow.setColor(Ui.alpha(0xFF000000, 0.4f * f));
                 c.drawRoundRect(tmp, r, r, shadow);
                 tmp.offset(0, -10 * k * f);
+                white.setColor(focusInk() == INK ? 0xFFFFFFFF : 0xFF303036);
                 white.setAlpha(Math.round(255 * f));
                 c.drawRoundRect(tmp, r, r, white);
                 rowRect.set(tmp);
@@ -579,13 +582,13 @@ public class SettingsActivity extends Activity {
                 float y = (LIST_TOP + 20 + i * (CHOICE_H + ROW_GAP)) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + CHOICE_H * k);
                 float f = drawRowBackground(c, i);
-                rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
-                rowSub.setColor(blend(0x8CFFFFFF, 0x991C1C1E, f));
+                rowLabel.setColor(blend(0xF2FFFFFF, focusInk(), f));
+                rowSub.setColor(blend(0x8CFFFFFF, Ui.alpha(focusInk(), 0.6f), f));
                 c.drawText(options[i][0], rowRect.left + 30 * k, rowRect.top + 44 * k, rowLabel);
                 c.drawText(options[i][1], rowRect.left + 30 * k, rowRect.top + 80 * k, rowSub);
                 if (i == current) {
                     float cw = Symbols.width(getContext(), "check", 26 * k);
-                    Symbols.draw(getContext(), c, "check", rowRect.right - 30 * k - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, INK, f));
+                    Symbols.draw(getContext(), c, "check", rowRect.right - 30 * k - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, focusInk(), f));
                 }
             }
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
@@ -698,14 +701,10 @@ public class SettingsActivity extends Activity {
         // MARK: - Home Settings and Remote Buttons
 
         private static final String[] UNITS = {"auto", "C", "F"}, THEMES = {"auto", "light", "dark"};
-        /** Home Settings: language, temperature, theme, my photos, sounds, weather, city, quotes, then one row per coin. */
-        private static final int PHOTOS_ROW = 3, CITY_ROW = 6, COIN_ROWS = 8;
+        /** Home Settings: language, temperature, theme, my photos, sounds, weather and city. */
+        private static final int PHOTOS_ROW = 3, CITY_ROW = 6;
         /** Home Settings rows on screen at once (what fits above the hints at 1080p); a longer list scrolls. */
         private static final int SETTINGS_VISIBLE = 10;
-
-        private boolean dollar() {
-            return "BRL".equalsIgnoreCase(Config.CURRENCY.trim());
-        }
 
         private String[] settingLabels() {
             List<String> l = new ArrayList<>();
@@ -716,11 +715,10 @@ public class SettingsActivity extends Activity {
             l.add(Ui.tr("Navigation sounds"));
             l.add(Ui.tr("Weather widget"));
             l.add(Ui.tr("City"));
-            l.add(Ui.tr("Quotes widget"));
-            l.add("Bitcoin");
-            l.add("Ethereum");
-            l.add("Solana");
-            if (dollar()) l.add(Ui.tr("Dollar"));
+            l.add(Ui.tr("Background"));
+            l.add(Ui.tr("Background effect"));
+            l.add(Ui.tr("Blur strength"));
+            l.add(Ui.tr("Background brightness"));
             return l.toArray(new String[0]);
         }
 
@@ -739,9 +737,10 @@ public class SettingsActivity extends Activity {
             v[4] = onOff(Prefs.sounds());
             v[5] = onOff(Prefs.weather());
             v[CITY_ROW] = !cityStatus.isEmpty() ? cityStatus : Prefs.city().isEmpty() ? "—" : Prefs.city();
-            v[7] = onOff(Prefs.quotes());
-            // No quotes widget, nowhere to show prices: the coins read as off (and stay locked) until it is back on.
-            for (int i = COIN_ROWS; i < v.length; i++) v[i] = onOff(Prefs.quotes() && Prefs.coin(i - COIN_ROWS));
+            v[7] = Wallpaper.name(Prefs.background());
+            v[8] = Prefs.backgroundBlur() ? Ui.tr("Blurred background") : Ui.tr("Only background");
+            v[9] = Prefs.backgroundBlur() ? Prefs.backgroundStrength() + "%" : Ui.tr("Off");
+            v[10] = Prefs.backgroundBrightness() + "%";
             return v;
         }
 
@@ -777,6 +776,8 @@ public class SettingsActivity extends Activity {
 
         /** Why row `i` can't be used here, for the person to read; null where it works. */
         private String unavailable(int i) {
+            if (screen == HOME_SETTINGS && pickScroll + i >= 8 && Prefs.background().equals("auto"))
+                return Ui.tr("Choose a preset to customize the background effect.");
             int n = rowCount();
             if (i < 0 || i >= n) return null;
             if (whyRows == null || whyRows.length != n || whyScreen != screen || whyScroll != pickScroll) {
@@ -785,9 +786,7 @@ public class SettingsActivity extends Activity {
                 whyScroll = pickScroll;
                 for (int r = 0; r < n; r++) {
                     String need = need(r);
-                    whyRows[r] = screen == HOME_SETTINGS && pickScroll + r >= COIN_ROWS && !Prefs.quotes()
-                            ? Ui.tr("Turn on the Quotes widget to pick its coins.")
-                            : need == null ? null : Capabilities.missing(getContext(), need);
+                    whyRows[r] = need == null ? null : Capabilities.missing(getContext(), need);
                 }
             }
             return whyRows[i];
@@ -998,11 +997,15 @@ public class SettingsActivity extends Activity {
                 case 4: Prefs.setSounds(!Prefs.sounds()); break;
                 case 5: Prefs.setWeather(!Prefs.weather()); break;
                 case CITY_ROW: return;
-                case 7: Prefs.setQuotes(!Prefs.quotes()); break;
-                default:
-                    if (!Prefs.quotes()) return;
-                    Prefs.setCoin(row - COIN_ROWS, !Prefs.coin(row - COIN_ROWS));
-                    break;
+                case 7: {
+                    int at = java.util.Arrays.asList(Wallpaper.CHOICES).indexOf(Prefs.background());
+                    Prefs.setBackground(Wallpaper.CHOICES[(at + dir + Wallpaper.CHOICES.length) % Wallpaper.CHOICES.length]);
+                    return;
+                }
+                case 8: Prefs.setBackgroundBlur(!Prefs.backgroundBlur()); return;
+                case 9: if (Prefs.backgroundBlur()) Prefs.setBackgroundStrength(Prefs.backgroundStrength() + dir * 5); return;
+                case 10: Prefs.setBackgroundBrightness(Prefs.backgroundBrightness() + dir * 5); return;
+                default: return;
             }
             HomeData.get(getContext()).settingsChanged();
         }
@@ -1053,7 +1056,7 @@ public class SettingsActivity extends Activity {
                 List<String[]> found;
                 String error;
                 try {
-                    found = HomeData.findCity(name);
+                    found = HomeData.get(activity).findCity(name);
                     error = found.isEmpty() ? Ui.tr("No city with that name.") : "";
                 } catch (Exception e) {
                     found = new ArrayList<>();
@@ -1158,16 +1161,16 @@ public class SettingsActivity extends Activity {
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 boolean off = unavailable(i) != null;
-                rowLabel.setColor(off ? blend(0x73FFFFFF, 0x731C1C1E, f)
-                        : blend(place >= 0 ? 0xF2FFFFFF : 0x80FFFFFF, place >= 0 ? INK : 0x801C1C1E, f));
-                rowValue.setColor(off ? blend(0x59FFFFFF, 0x591C1C1E, f) : blend(0xB3FFFFFF, 0xB31C1C1E, f));
+                rowLabel.setColor(off ? blend(0x73FFFFFF, Ui.alpha(focusInk(), 0.45f), f)
+                        : blend(place >= 0 ? 0xF2FFFFFF : 0x80FFFFFF, place >= 0 ? focusInk() : Ui.alpha(focusInk(), 0.5f), f));
+                rowValue.setColor(off ? blend(0x59FFFFFF, Ui.alpha(focusInk(), 0.35f), f) : blend(0xB3FFFFFF, Ui.alpha(focusInk(), 0.7f), f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(TextUtils.ellipsize(app[1], new TextPaint(rowLabel), 520 * k, TextUtils.TruncateAt.END).toString(), rowRect.left + 30 * k, base, rowLabel);
                 float right = rowRect.right - 30 * k;
                 if (place >= 0 && !off) {
                     // On the shelf: a check, as in the pickers, after its place.
                     float cw = Symbols.width(getContext(), "check", 26 * k);
-                    Symbols.draw(getContext(), c, "check", right - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, INK, f));
+                    Symbols.draw(getContext(), c, "check", right - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, focusInk(), f));
                     right -= cw + 16 * k;
                 }
                 c.drawText(off ? Ui.tr("Unavailable") : place >= 0 ? "#" + (place + 1) : Ui.tr("shelf|Off"), right, base, rowValue);
@@ -1227,14 +1230,14 @@ public class SettingsActivity extends Activity {
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
                 boolean off = unavailable(i) != null;
-                rowLabel.setColor(off ? blend(0x73FFFFFF, 0x731C1C1E, f) : blend(0xF2FFFFFF, INK, f));
+                rowLabel.setColor(off ? blend(0x73FFFFFF, Ui.alpha(focusInk(), 0.45f), f) : blend(0xF2FFFFFF, focusInk(), f));
                 c.drawText(pickLabels.get(at), rowRect.left + 30 * k, rowRect.centerY() + Ui.halfCap(rowLabel), rowLabel);
                 if (off) {
-                    rowValue.setColor(blend(0x59FFFFFF, 0x591C1C1E, f));
+                    rowValue.setColor(blend(0x59FFFFFF, Ui.alpha(focusInk(), 0.35f), f));
                     c.drawText(Ui.tr("Unavailable"), rowRect.right - 30 * k, rowRect.centerY() + Ui.halfCap(rowLabel), rowValue);
                 } else if (at == pickCurrent) {
                     float cw = Symbols.width(getContext(), "check", 26 * k);
-                    Symbols.draw(getContext(), c, "check", rowRect.right - 30 * k - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, INK, f));
+                    Symbols.draw(getContext(), c, "check", rowRect.right - 30 * k - cw / 2, rowRect.centerY(), 26 * k, blend(0xFFFFFFFF, focusInk(), f));
                 }
             }
             Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
@@ -1256,11 +1259,11 @@ public class SettingsActivity extends Activity {
                 float y = (LIST_TOP + 20 + i * pitch) * k;
                 rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
                 float f = drawRowBackground(c, i);
-                rowLabel.setColor(blend(0xF2FFFFFF, INK, f));
+                rowLabel.setColor(blend(0xF2FFFFFF, focusInk(), f));
                 boolean locked = unavailable(i) != null;
                 if (locked) values[from + i] = Ui.tr("Unavailable");
-                rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, locked ? 0x591C1C1E : 0xB31C1C1E, f));
-                if (locked) rowLabel.setColor(blend(0x73FFFFFF, 0x731C1C1E, f));
+                rowValue.setColor(blend(locked ? 0x59FFFFFF : 0xB3FFFFFF, Ui.alpha(focusInk(), locked ? 0.35f : 0.7f), f));
+                if (locked) rowLabel.setColor(blend(0x73FFFFFF, Ui.alpha(focusInk(), 0.45f), f));
                 float base = rowRect.centerY() + Ui.halfCap(rowLabel);
                 c.drawText(labels[from + i], rowRect.left + 30 * k, base, rowLabel);
                 c.drawText(values[from + i], rowRect.right - 30 * k, base, rowValue);
